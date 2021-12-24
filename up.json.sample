@@ -1,0 +1,12 @@
+{
+    "name": "nori-atti-watcher",
+    // https://apex.sh/docs/up/credentials/#aws_credential_profiles
+    "profile": "<YOUR_AWS_CREDENTIAL_PROFILE>",
+    "regions": ["ap-northeast-2"],
+    "lambda": {
+      "runtime": "nodejs14.x"
+    },
+    "tags": {
+      "AppName": "nori-atti-watcher"
+    }
+  }
