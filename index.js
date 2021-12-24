@@ -2,9 +2,12 @@ const axios = require("axios");
 const cheerio = require("cheerio");
 const moment = require("moment");
 const dotenv = require("dotenv");
+const express = require('express');
+const app = express();
 
 dotenv.config();
 
+const port = process.env.PORT || 3000;
 const telegramToken = process.env.TELEGRAM_TOKEN;
 const telegramChatId = process.env.TELEGRAM_CHAT_ID;
 const telegramEndpoint = `https://api.telegram.org/bot${telegramToken}/sendmessage?chat_id=${telegramChatId}&parse_mode=markdown`;
@@ -26,7 +29,7 @@ async function init() {
   }
 
   const now = moment().format("YYYY-MM-DD");
-  const firstNotiText = `\\[*${now}*\] 의 놀이아띠 월계점 재고 상태를 보여줄게~🙈🙉`;
+  const firstNotiText = `\\[*${now}*\] 의 놀이아띠 월계점 장난감 재고 상태를 보여줄게~🙈🙉`;
   await axios(encodeURI(`${telegramEndpoint}&text=${firstNotiText}`));
 }
 
@@ -50,17 +53,20 @@ async function checkProducts() {
     },
   ];
 
+  console.info(`${products.length}개의 장난감 재고를 체크합니다.`);
+
   await Promise.all(products.map((product) => axios(product.url))).then(
-    (results) => {
-      results.forEach(({ data }, i) => {
+    async (results) => {
+      for (const [i, { data }] of results.entries()) {
         const $ = cheerio.load(data);
         // green class means available
         const availableCount = $(".__ico1.green").length;
         const { name, url } = products[i];
         const extra = extraText(availableCount);
         const text = `- [\`${name}\` 은(는) 현재 \`${availableCount}\`개 남았어. ${extra}](${url})`;
-        axios(encodeURI(`${telegramEndpoint}&text=${text}`));
-      });
+        console.info(text);
+        await axios(encodeURI(`${telegramEndpoint}&text=${text}`));
+      }
     }
   );
 }
@@ -70,4 +76,11 @@ async function main() {
   await checkProducts();
 }
 
-main();
+app.get('/', async (req, res) => {
+  await main();
+  return res.send('Successfully checked Nori Atti products!')
+});
+
+app.listen(port, () => {
+  console.log(`App listening at ${port}`);
+});
